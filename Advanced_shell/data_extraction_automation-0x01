@@ -1,0 +1,7 @@
+#!/bin/bash
+# $name is of type $type, weighs ${formatted_weight}kg, and is ${formatted_height}m tall.
+
+jq -r '.name, .types[0].type.name, .weight, .height' data.json | \
+awk 'NR==1{name=$0} NR==2{type=$0} NR==3{weight=$0/10} NR==4{height=$0/10} END{printf "%s\t%s\t%.0f\t%.1f\n", name, type, weight, height}' | \
+sed -E 's/^([a-z])/\U\1/; s/\t([a-z])/\t\U\1/' | \
+awk -F'\t' '{printf "%s is of type %s, weighs %skg, and is %sm tall.\n", $1, $2, $3, $4}'
