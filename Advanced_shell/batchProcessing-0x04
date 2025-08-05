@@ -1,0 +1,39 @@
+#!/bin/bash
+
+POKEMON_LIST=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
+API_URL="https://pokeapi.co/api/v2/pokemon"
+MAX_RETRIES=3
+
+# Clear or create errors.txt
+> errors.txt
+
+# Function to fetch a Pokémon with retry
+fetch_pokemon() {
+    local name=$1
+    for attempt in $(seq 1 $MAX_RETRIES); do
+        echo "Fetching $name (Attempt $attempt)..."
+        http_status=$(curl -s -w "%{http_code}" -o "${name}.json" "${API_URL}/${name}")
+        if [ "$http_status" -eq 200 ]; then
+            echo "✅ Successfully fetched $name"
+            return 0
+        else
+            echo "⚠️  Attempt $attempt failed for $name (HTTP $http_status)"
+            sleep 1
+        fi
+    done
+
+    echo "❌ Failed to fetch $name after $MAX_RETRIES attempts" | tee -a errors.txt
+    rm -f "${name}.json"
+}
+
+# Loop and fetch all in background
+for name in "${POKEMON_LIST[@]}"
+do
+    fetch_pokemon "$name" &
+done
+
+# Wait for all background jobs to finish
+wait
+
+echo "✅ All downloads complete."
+
