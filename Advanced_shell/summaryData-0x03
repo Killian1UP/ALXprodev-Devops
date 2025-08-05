@@ -1,25 +1,33 @@
 #!/bin/bash
 
-# Create the CSV report file with headers
+# Add CSV header
 echo "Name,Height(m),Weight(kg)" > pokemon_report.csv
 
-# Loop through all .json files
+# Loop through all JSON files and process each
 for file in *.json
 do
-    # Extract data with jq
-    jq -r '[.name, (.height/10), (.weight/10)] | @csv' "$file" >> pokemon_report.csv
+    # Use jq to extract name, height (dm → m), and weight (hg → kg)
+    # Then sed to clean any potential quotes or formatting
+    jq -r '[.name, (.height/10), (.weight/10)] | @csv' "$file" | sed 's/"//g' >> pokemon_report.csv
 done
 
-# Print the CSV contents
+# Print the CSV
 echo "=== Pokémon Report ==="
 cat pokemon_report.csv
 
-# Use awk to calculate average height and weight (skip header)
-awk -F',' 'NR>1 {height+=$2; weight+=$3; count++} 
-    END {
-        if (count > 0) {
-            printf "\nAverage height: %.2fm\nAverage weight: %.2fkg\n", height/count, weight/count;
-        } else {
-            print "No data to compute averages."
-        }
-    }' pokemon_report.csv
+# Use awk to calculate and display averages (skip header)
+awk -F',' 'NR>1 {
+    height += $2;
+    weight += $3;
+    count++;
+}
+END {
+    if (count > 0) {
+        avg_h = height / count;
+        avg_w = weight / count;
+        printf "\nAverage height: %.2fm\nAverage weight: %.2fkg\n", avg_h, avg_w;
+    } else {
+        print "No data to compute averages.";
+    }
+}' pokemon_report.csv
+
